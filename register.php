@@ -1,7 +1,7 @@
 <?php
     ob_start();
     session_start();
-    $db = mysqli_connect("localhost", "radius", "radpass", "radius");
+    $db = mysqli_connect("localhost", "radius", "changeme", "radius");
 
     $msg = '';
     // Register
@@ -15,12 +15,17 @@
         );
         // Check if user already exists
         if (!mysqli_num_rows($result)) {
-            $result = mysqli_query(
+            $result1 = mysqli_query(
                 $db, 
-                "INSERT INTO radcheck (username, attribute, value)
-                VALUES ('$username', 'Cleartext-Password', '$password')"
+                "INSERT INTO radcheck (username, attribute, op, `value`)
+                VALUES ('$username', 'Cleartext-Password', ':=', '$password')"
             );
-            if ($result) {
+            $result2 = mysqli_query(
+                $db, 
+                "INSERT INTO radusergroup (username, groupname)
+                VALUES ('$username', 'user')"
+            );
+            if ($result1 && $result2) {
                 $msg = "Registered.";
             } else {
                 $msg = "Failed. Please retry.";
@@ -57,8 +62,11 @@
         </section>
     </form>
 
-    <p style="margin-left: 2rem;"> 
+    <p style="margin-left: 2rem; display: inline-block;"> 
         <a href = "hotspotlogin.php" tite = "Logout">Log in</a> 
+    </p>
+    <p style="margin-left: 2rem; display: inline-block;"> 
+        <a href = "admin.php" tite = "Admin">Admin</a>
     </p>
     </div> 
 </body>

@@ -1,7 +1,7 @@
 <?php
     ob_start();
     session_start();
-    $db = mysqli_connect("localhost", "radius", "radpass", "radius");
+    $db = mysqli_connect("localhost", "radius", "changeme", "radius");
 
     $msg = '';
     // Check user login
@@ -66,6 +66,9 @@
     </p>
     <p style="margin-left: 2rem; display: inline-block;"> 
         <a href = "register.php" tite = "Register">Register</a>
+    </p>
+    <p style="margin-left: 2rem; display: inline-block;"> 
+        <a href = "admin.php" tite = "Admin">Admin</a>
     </p>
     </div> 
 </body>
