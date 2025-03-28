@@ -3,6 +3,8 @@
     session_start();
     $db = mysqli_connect("localhost", "radius", "changeme", "radius");
 
+    exec("php cleanup.php > /dev/null 2>&1 &");
+
     $msg = '';
     // Check user login
     if (isset($_POST['login']) && !empty($_POST['username']) && !empty($_POST['password'])) {
