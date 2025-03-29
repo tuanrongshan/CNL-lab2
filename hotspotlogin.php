@@ -16,6 +16,9 @@ $uamsecret = "uamsecret";
 $userpassword=1;
 
 $loginpath = "/hotspotlogin.php";
+$db = mysqli_connect("localhost", "radius", "changeme", "radius");
+
+exec("php cleanup.php > /dev/null 2>&1 &");
 
 # possible Cases:       
 # attempt to login                          login=login
@@ -57,12 +60,15 @@ $bodytext = '';
 $body_onload = '';
 $footer_text = '<center>
                   <a href="http://freenet.surething.biz/catalog2/index.php">[HELP]</a> 
-                  <a href="http://freenet.surething.biz/catalog2/product_info.php?products_id=34">[terms and conditions]</a>  
+                  <a href="http://freenet.surething.biz/catalog2/product_info.php?products_id=34">[terms and conditions]</a>
+                  <a href="register.php">[Register]</a>
                 </center>';
          
 $footer_textz  = '';                 
 # attempt to login
-if ($_GET['login'] == login) {
+if (isset($_GET['login']) && $_GET['login'] == 'login') {
+  session_start();
+  $_SESSION['login_user'] = $_GET['UserName'];
   $hexchal = pack ("H32", $_GET['chal']);
   if (isset ($uamsecret)) {
     $newchal = pack ("H*", md5($hexchal . $uamsecret));
@@ -73,8 +79,8 @@ if ($_GET['login'] == login) {
   $newpwd = pack("a32", $_GET['Password']);
   $pappassword = implode ("", unpack("H32", ($newpwd ^ $newchal)));
 
-  $titel = 'Logging in to FreeNET HotSpot'; 
-  $headline = 'Logging in to FreeNET HotSpot';
+  $titel = 'Logging in to HotSpot'; 
+  $headline = 'Logging in to HotSpot';
   $bodytext = ''; 
   print_header();
   if ((isset ($uamsecret)) && isset($userpassword)) {
@@ -86,10 +92,11 @@ if ($_GET['login'] == login) {
    print_footer();
 }
 # 1: Login successful
-if ($_GET['res'] == success) {
+if ($_GET['res'] == 'success') {
+  session_start();
   $result = 1;
-  $titel = 'Logged in to FreeNET HotSpot';
-  $headline = 'Logged in to FreeNET HotSpot';
+  $titel = 'Logged in to HotSpot';
+  $headline = 'Logged in to HotSpot';
   $bodytext = 'Welcome';
   $body_onload = 'onLoad="javascript:popUp(' . $loginpath . '?res=popup&uamip=' . $_GET['uamip'] . '&uamport=' . $_GET['uamport'] . '&timeleft='  . $_GET['timeleft'] . ')"';
   print_header();
@@ -101,7 +108,7 @@ if ($_GET['res'] == success) {
   print_footer();
 }
 # 2: Login failed
-if ($_GET['res'] == failed) {
+if ($_GET['res'] == 'failed') {
   $result = 2;
   $titel = 'HotSpot Login Failed';
   $headline = 'HotSpot Login Failed';
@@ -115,30 +122,30 @@ if ($_GET['res'] == failed) {
   print_footer();
 }
 # 3: Logged out
-if ($_GET['res'] == logoff) {
+if ($_GET['res'] == 'logoff') {
   $result = 3;
-  $titel = 'Logged out from FreeNET HotSpot';
-  $headline = 'Logged out from FreeNET HotSpot';
+  $titel = 'Logged out from HotSpot';
+  $headline = 'Logged out from HotSpot';
   $bodytext = '<a href="http://' . $_GET['uamip'] . ':' . $_GET['uamport'] . '/prelogin">Login</a>';
   print_header();
   print_body();
   print_footer();
 }
 # 4: Tried to login while already logged in
-if ($_GET['res'] == already) {
+if ($_GET['res'] == 'already') {
   $result = 4;
-  $titel = 'Already logged in to FreeNET HotSpot';
-  $headline = 'Already logged in to FreeNET HotSpot';
+  $titel = 'Already logged in to HotSpot';
+  $headline = 'Already logged in to HotSpot';
   $bodytext = '<a href="http://' . $_GET['uamip'] . ':' . $_GET['uamport'] . '/logoff">Logout</a>';
   print_header();
   print_body();
   print_footer();
 }
 # 5: Not logged in yet
-if ($_GET['res'] == notyet) {
+if ($_GET['res'] == 'notyet') {
   $result = 5;
-  $titel = 'Logged out from FreeNET HotSpot';
-  $headline = 'Logged out from FreeNET HotSpot';
+  $titel = 'Logged out from HotSpot';
+  $headline = 'Logged out from HotSpot';
   $bodytext = 'please log in<br>';
   print_header();
   print_body();
@@ -146,9 +153,9 @@ if ($_GET['res'] == notyet) {
   print_footer();
 }
 #11: Popup1
-if ($_GET['res'] == popup1) {
+if ($_GET['res'] == 'popup1') {
   $result = 11;
-  $titel = 'Logging into FreeNET HotSpot';
+  $titel = 'Logging into HotSpot';
   $headline = 'Logged in to HotSpot';
   $bodytext = 'please wait...';
   print_header();
@@ -156,20 +163,32 @@ if ($_GET['res'] == popup1) {
   print_footer();
 }
 #12: Popup2
-if ($_GET['res'] == popup2) {
+if ($_GET['res'] == 'popup2') {
+  session_start();
   $result = 12;
   $titel = 'Do not close this Window!';
-  $headline = 'Logged in to FreeNET HotSpot';
-  $bodytext = '<a href="http://' . $_GET['uamip'] . ':' . $_GET['uamport'] . '/logoff">Logout</a>';
+  $headline = 'Logged in to HotSpot';
+  $username = $_SESSION['login_user'];
+  $sql = mysqli_query(
+      $db, 
+      "SELECT 
+          SUM(acctsessiontime) AS total_time, 
+          SUM(acctinputoctets + acctoutputoctets) AS total_traffic
+      FROM radacct WHERE username = '$username'"
+  );
+  $row = mysqli_fetch_assoc($sql);    
+  $msg = "Current traffic usage: " . ($row['total_traffic']) . " bytes. Time usage: " . ($row['total_time']) . " sec";
+
+  $bodytext = $msg . '<br><br><a href="http://' . $_GET['uamip'] . ':' . $_GET['uamport'] . '/logoff">Logout</a>';
   print_header();
   print_bodyz();
   print_footer();
 }
 #13: Popup3
-if ($_GET['res'] == popup3) {
+if ($_GET['res'] == 'popup3') {
   $result = 13;
-  $titel = 'Logged out from FreeNET HotSpot';
-  $headline = 'Logged out from FreeNET HotSpot';
+  $titel = 'Logged out from HotSpot';
+  $headline = 'Logged out from HotSpot';
   $bodytext = '<a href="http://' . $_GET['uamip'] . ':' . $_GET['uamport'] . '/prelogin">Login</a>';
   print_header();
   print_body();
@@ -302,11 +321,11 @@ function print_body(){
       <h1 style=\"text-align: center;\">$headline</h1>
       <center>$bodytext</center><br>";
 # begin debugging
-#  print '<center>THE INPUT (for debugging):<br>';
-#    foreach ($_GET as $key => $value) {
-#      print $key . '=' . $value . '<br>';
-#    }
-#  print '<br></center>';
+  print '<center>THE INPUT (for debugging):<br>';
+    foreach ($_GET as $key => $value) {
+      print $key . '=' . $value . '<br>';
+    }
+  print '<br></center>';
 # end debugging
 }
 function print_bodyz(){
@@ -326,11 +345,11 @@ function print_bodyz(){
       <center>Do not close this window</center>
       <center>otherwise you'll be logged out immediately</center>";
 # begin debugging
-#  print '<center>THE INPUT (for debugging):<br>';
-#    foreach ($_GET as $key => $value) {
-#      print $key . '=' . $value . '<br>';
-#    }
-#  print '<br></center>';
+  print '<center>THE INPUT (for debugging):<br>';
+    foreach ($_GET as $key => $value) {
+      print $key . '=' . $value . '<br>';
+    }
+  print '<br></center>';
 # end debugging
 }
 function print_login_form(){
