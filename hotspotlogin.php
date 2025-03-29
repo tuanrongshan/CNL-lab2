@@ -62,6 +62,7 @@ $footer_text = '<center>
                   <a href="http://freenet.surething.biz/catalog2/index.php">[HELP]</a> 
                   <a href="http://freenet.surething.biz/catalog2/product_info.php?products_id=34">[terms and conditions]</a>
                   <a href="?action=register">[Register]</a>
+                  <a href="?action=admin">[Admin]</a>
                 </center>';
          
 $footer_textz  = '';                 
@@ -134,6 +135,80 @@ if (isset($_POST['register']) && $_POST['register'] == 'register') {
   print_body();
   print_footer();
 }
+# 17: Modify
+if (isset($_POST['modify']) && $_POST['modify'] == 'modify') {
+  session_start();
+  $result = 17;
+  $titel = 'Set limits failed';
+  $headline = 'Set limits failed';
+  if (!empty($_POST['UserName'])) {
+    $username = mysqli_real_escape_string($db, $_POST['UserName']);
+    $traffic_lim = isset($_POST['TrafficLim']) ? intval($_POST['TrafficLim']) : 0;
+    $time_lim = isset($_POST['TimeLim']) ? intval($_POST['TimeLim']) : 0;
+    // Find user in database
+    $sql = mysqli_query(
+      $db,
+      "SELECT * FROM radcheck WHERE username = '$username'"
+    );
+    // Check if user attr already exists
+    if (mysqli_num_rows($sql)) {
+      $sql1 = '';
+      $sql2 = '';
+      if ($traffic_lim) {
+        $exist = mysqli_query(
+          $db,
+          "SELECT * FROM radcheck WHERE username = '$username' AND attribute = 'Max-All-Traffic'"
+        );
+        if (!mysqli_num_rows($exist)) {
+          $sql1 = mysqli_query(
+            $db,
+            "INSERT INTO radcheck (username, attribute, op, `value`)
+            VALUES ('$username', 'Max-All-Traffic', ':=', $traffic_lim)"
+          );
+        } else {
+          $sql1 = mysqli_query(
+            $db,
+            "UPDATE radcheck SET `value` = $traffic_lim 
+            WHERE attribute = 'Max-All-Traffic' AND username = '$username'"
+          );
+        }
+      }
+      if ($time_lim) {
+        $exist = mysqli_query(
+          $db,
+          "SELECT * FROM radcheck WHERE username = '$username' AND attribute = 'Max-All-Session'"
+        );
+        if (!mysqli_num_rows($exist)) {
+          $sql2 = mysqli_query(
+            $db,
+            "INSERT INTO radcheck (username, attribute, op, `value`)
+            VALUES ('$username', 'Max-All-Session', ':=', $time_lim)"
+          );
+        } else {
+          $sql2 = mysqli_query(
+            $db, 
+            "UPDATE radcheck SET `value` = $time_lim
+            WHERE attribute = 'Max-All-Session' AND username = '$username'"
+          );
+        }
+      }
+      if ($sql1 && $sql2) {
+        $titel = "Modified";
+        $headline = 'Modified successfully';
+        $bodytext = 'Please reopen the window and login through ChilliSpot daemon<br>';
+      } else {
+        $bodytext = "please retry<br>";
+      }
+    } else {
+      $bodytext = "username not exists<br>";
+    }
+  } else {
+    $bodytext = "username cannot be empty<br>";
+  }
+  print_header();
+  print_body();
+  print_footer();
+}
 # 14: Register page
 if (isset($_GET['action']) && $_GET['action'] == 'register') {
   session_start();
@@ -144,6 +219,18 @@ if (isset($_GET['action']) && $_GET['action'] == 'register') {
   print_header();
   print_body();
   print_register_form();
+  print_footer();
+}
+# 16: Admin page
+if (isset($_GET['action']) && $_GET['action'] == 'admin') {
+  session_start();
+  $result = 16;
+  $titel = 'HotSpot Admin';
+  $headline = 'Admin: Usage limits for HotSpot';
+  $bodytext = 'please set limits<br>';
+  print_header();
+  print_body();
+  print_modify_form();
   print_footer();
 }
 # 1: Login successful
@@ -449,6 +536,32 @@ function print_register_form(){
             </tr>
             <tr>
               <td align="center" colspan="2" height="23"><input type="submit" name="register" value="register"></td>
+          </tr>
+        </tbody>
+        </table>
+        </center>
+      </form>';
+}
+function print_modify_form(){
+  global $loginpath;
+  print '<FORM name="form3" METHOD="post" action="' . $loginpath . '?modify=modify">
+          <center>
+          <table border="0" cellpadding="5" cellspacing="0" style="width: 400px;">
+          <tbody>
+            <tr>
+              <td align="right">Username:</td>
+              <td><input type="text" name="UserName" size="20" maxlength="255"></td>
+            </tr>
+            <tr>
+              <td align="right">Traffic Limit:</td>
+              <td><input type="text" name="TrafficLim" size="20" maxlength="255"></td>
+            </tr>
+            <tr>
+              <td align="right">Time Limit:</td>
+              <td><input type="text" name="TimeLim" size="20" maxlength="255"></td>
+            </tr>
+            <tr>
+              <td align="center" colspan="2" height="23"><input type="submit" name="modify" value="modify"></td>
           </tr>
         </tbody>
         </table>
