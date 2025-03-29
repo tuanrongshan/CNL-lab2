@@ -61,7 +61,7 @@ $body_onload = '';
 $footer_text = '<center>
                   <a href="http://freenet.surething.biz/catalog2/index.php">[HELP]</a> 
                   <a href="http://freenet.surething.biz/catalog2/product_info.php?products_id=34">[terms and conditions]</a>
-                  <a href="register.php">[Register]</a>
+                  <a href="?action=register">[Register]</a>
                 </center>';
          
 $footer_textz  = '';                 
@@ -90,6 +90,61 @@ if (isset($_GET['login']) && $_GET['login'] == 'login') {
   }
    print_body();
    print_footer();
+}
+# 15: Register
+if (isset($_POST['register']) && $_POST['register'] == 'register') {
+  session_start();
+  $result = 15;
+  $titel = 'Register failed';
+  $headline = 'Register failed';
+  if (!empty($_POST['UserName']) && !empty($_POST['Password'])) {
+    $username = mysqli_real_escape_string($db, $_POST['UserName']);
+    $password = mysqli_real_escape_string($db, $_POST['Password']);
+    // Find (user, password) in database
+    $sql = mysqli_query(
+      $db,
+      "SELECT * FROM radcheck WHERE username = '$username'"
+    );
+    // Check if user already exists
+    if (!mysqli_num_rows($sql)) {
+      $sql1 = mysqli_query(
+        $db, 
+        "INSERT INTO radcheck (username, attribute, op, `value`)
+        VALUES ('$username', 'Cleartext-Password', ':=', '$password')"
+      );
+      $sql2 = mysqli_query(
+        $db, 
+        "INSERT INTO radusergroup (username, groupname)
+        VALUES ('$username', 'user')"
+      );
+      if ($sql1 && $sql2) {
+        $titel = "Registered";
+        $headline = 'Registered for HotSpot successfully';
+        $bodytext = 'Please reopen the window and login through ChilliSpot daemon<br>';
+      } else {
+        $bodytext = "please retry<br>";
+      }
+    } else {
+      $bodytext = "username already exists<br>";
+    }
+  } else {
+    $bodytext = "username and password cannot be empty<br>";
+  }
+  print_header();
+  print_body();
+  print_footer();
+}
+# 14: Register page
+if (isset($_GET['action']) && $_GET['action'] == 'register') {
+  session_start();
+  $result = 14;
+  $titel = 'Register for HotSpot';
+  $headline = 'Register for HotSpot';
+  $bodytext = 'please register<br>';
+  print_header();
+  print_body();
+  print_register_form();
+  print_footer();
 }
 # 1: Login successful
 if ($_GET['res'] == 'success') {
@@ -372,6 +427,28 @@ function print_login_form(){
             </tr>
             <tr>
               <td align="center" colspan="2" height="23"><input type="submit" name="login" value="login"></td>
+          </tr>
+        </tbody>
+        </table>
+        </center>
+      </form>';
+}
+function print_register_form(){
+  global $loginpath;
+  print '<FORM name="form2" METHOD="post" action="' . $loginpath . '?register=register">
+          <center>
+          <table border="0" cellpadding="5" cellspacing="0" style="width: 217px;">
+          <tbody>
+            <tr>
+              <td align="right">Register:</td>
+              <td><input type="text" name="UserName" size="20" maxlength="255"></td>
+            </tr>
+            <tr>
+              <td align="right">Password:</td>
+              <td><input type="password" name="Password" size="20" maxlength="255"></td>
+            </tr>
+            <tr>
+              <td align="center" colspan="2" height="23"><input type="submit" name="register" value="register"></td>
           </tr>
         </tbody>
         </table>
