@@ -239,7 +239,19 @@ if ($_GET['res'] == 'success') {
   $result = 1;
   $titel = 'Logged in to HotSpot';
   $headline = 'Logged in to HotSpot';
-  $bodytext = 'Welcome';
+
+  $username = $_SESSION['login_user'];
+  $sql = mysqli_query(
+      $db, 
+      "SELECT 
+          SUM(acctsessiontime) AS total_time, 
+          SUM(acctinputoctets + acctoutputoctets) AS total_traffic
+      FROM radacct WHERE username = '$username'"
+  );
+  $row = mysqli_fetch_assoc($sql);    
+  $msg = "Current traffic usage: " . ($row['total_traffic']) . " bytes. Time usage: " . ($row['total_time']) . " sec";
+
+  $bodytext = 'Welcome<br><br>' . $msg;
   $body_onload = 'onLoad="javascript:popUp(' . $loginpath . '?res=popup&uamip=' . $_GET['uamip'] . '&uamport=' . $_GET['uamport'] . '&timeleft='  . $_GET['timeleft'] . ')"';
   print_header();
   print_body();
@@ -310,18 +322,7 @@ if ($_GET['res'] == 'popup2') {
   $result = 12;
   $titel = 'Do not close this Window!';
   $headline = 'Logged in to HotSpot';
-  $username = $_SESSION['login_user'];
-  $sql = mysqli_query(
-      $db, 
-      "SELECT 
-          SUM(acctsessiontime) AS total_time, 
-          SUM(acctinputoctets + acctoutputoctets) AS total_traffic
-      FROM radacct WHERE username = '$username'"
-  );
-  $row = mysqli_fetch_assoc($sql);    
-  $msg = "Current traffic usage: " . ($row['total_traffic']) . " bytes. Time usage: " . ($row['total_time']) . " sec";
-
-  $bodytext = $msg . '<br><br><a href="http://' . $_GET['uamip'] . ':' . $_GET['uamport'] . '/logoff">Logout</a>';
+  $bodytext = '<a href="http://' . $_GET['uamip'] . ':' . $_GET['uamport'] . '/logoff">Logout</a>';
   print_header();
   print_bodyz();
   print_footer();
